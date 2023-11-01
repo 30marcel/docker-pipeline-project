@@ -1,30 +1,28 @@
-node {
-    def app
-
-    stage('Clone repository') {
-      
-
-        checkout scm
+pipeline {
+    agent any
+    environment{
+      DOCKERHUB_CREDENTIALS = credentials('dockerhub')
     }
-
-    stage('Build image') {
-  
-       app = docker.build("brandonjones085/test")
-    }
-
-    stage('Test image') {
-  
-
-        app.inside {
-            sh 'echo "Tests passed"'
+    stages {
+        stage('Build') {
+            steps {
+                sh 'docker build -t melong123/web-nao:1.0.3 .'
+            }
         }
-    }
-
-    stage('Push image') {
-        
-        docker.withRegistry('https://registry.hub.docker.com', 'git') {
-            app.push("${env.BUILD_NUMBER}")
-            app.push("latest")
+        stage('Login') {
+            steps {
+                sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+            }
+        }
+        stage('Push') {
+            steps {
+                sh 'docker push melong123/web-nao:1.0.3'
+            }
+        }
+        stage('Logout') {
+            steps {
+                sh 'docker logout'
+            }
         }
     }
 }
